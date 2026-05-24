@@ -47,7 +47,7 @@ December 2025 upgrade. Run the tool:
 
 You will see output like:
 
-(image)
+![Output](docs/images/result.png)
 
 The exit code is `1` when any property fails. The two failures point to
 verifiable on-chain artifacts:
