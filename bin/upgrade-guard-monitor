@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE="${1:-upgrade-guard.toml}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: config file not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+
+python3 "$SCRIPT_DIR/parse-config.py" "$CONFIG_FILE" > "$TMPFILE"
+
+set -a
+# shellcheck disable=SC1090
+source "$TMPFILE"
+set +a
+
+# NOTE: no --fork-block-number means forge uses the latest block.
+forge script script/MonitorOnce.s.sol \
+    --rpc-url "$ETH_RPC_URL" \
+    --sender 0x0000000000000000000000000000000000000001 \
+    -vvv

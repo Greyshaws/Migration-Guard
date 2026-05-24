@@ -1,0 +1,83 @@
+name: upgrade-guard
+
+on:
+  pull_request:
+    branches: [main, master]
+  # Also allow manual triggering for testing
+  workflow_dispatch:
+
+jobs:
+  upgrade-guard-check:
+    name: Run upgrade-guard properties
+    runs-on: ubuntu-latest
+
+    # Permissions needed to post a comment on the PR
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: stable
+
+      - name: Run upgrade-guard
+        id: upgrade-guard
+        env:
+          ETH_RPC_URL: ${{ secrets.ETH_RPC_URL }}
+        run: |
+          set +e   # Don't fail the step on non-zero exit; we want to capture output
+          OUTPUT=$(./bin/upgrade-guard upgrade-guard.toml 2>&1)
+          EXIT_CODE=$?
+          set -e
+
+          # Save output to a file so we can use it across steps
+          echo "$OUTPUT" > /tmp/upgrade-guard-output.txt
+
+          # Print to logs
+          echo "$OUTPUT"
+
+          # Extract just the report body (between the first ====== line and Summary block)
+          # We use the full output for the PR comment.
+
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: Post report as PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('/tmp/upgrade-guard-output.txt', 'utf8');
+            const exitCode = '${{ steps.upgrade-guard.outputs.exit_code }}';
+            const status = exitCode === '0' ? '✅ PASS' : '❌ FAIL';
+
+            const body = `## upgrade-guard report — ${status}
+
+            \`\`\`
+            ${output}
+            \`\`\`
+
+            <sub>Run by [upgrade-guard](https://github.com/${{ github.repository }}) on commit \`${{ github.event.pull_request.head.sha }}\`</sub>`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail the build on property failures
+        if: steps.upgrade-guard.outputs.exit_code != '0'
+        run: |
+          echo "::error::upgrade-guard detected property failures. See PR comment for details."
+          exit 1

@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+CONFIG_FILE="${1:-upgrade-guard.toml}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Error: config file not found: $CONFIG_FILE" >&2
+    exit 1
+fi
+
+TMPFILE=$(mktemp)
+OUTPUT_FILE=$(mktemp)
+trap 'rm -f "$TMPFILE" "$OUTPUT_FILE"' EXIT
+
+python3 "$SCRIPT_DIR/parse-config.py" "$CONFIG_FILE" > "$TMPFILE"
+
+set -a
+# shellcheck disable=SC1090
+source "$TMPFILE"
+set +a
+
+forge script script/RunAll.s.sol \
+    --rpc-url "$ETH_RPC_URL" \
+    --fork-block-number "$UG_FORK_BLOCK" \
+    --sender 0x0000000000000000000000000000000000000001 \
+    -vvv | tee "$OUTPUT_FILE"
+
+# Exit non-zero if the report contains "STATUS: FAIL"
+if grep -q "STATUS: FAIL" "$OUTPUT_FILE"; then
+    exit 1
+fi
+
+exit 0

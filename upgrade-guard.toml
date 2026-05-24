@@ -1,0 +1,49 @@
+[protocol]
+name  = "ribbon-aevo-legacy"
+chain = "ethereum"
+
+[fork]
+block = 23994254
+
+[[admin_contracts]]
+name        = "ribbon_proxy_owner"
+address     = "0x9D7b3586f361e3621Bf4F099cBC9d155e8ae6B76"
+owner_slot  = 0
+
+[properties.admin_owner_in_approved_set]
+enabled         = true
+approved_owners = ["0x0000000000000000000000000000000000000001"]
+
+[properties.tx_origin_in_authorization]
+enabled = true
+
+[[dependencies]]
+name              = "ribbon_price_oracle"
+address           = "0x5f4eC3Df9cbd43714FE2740f5E3616155c5b8419"  # PLACEHOLDER - see note
+consumers         = ["0x3c212A044760DE5a529B3Ba59363ddeCcc2210bE"]
+expected_decimals = 8
+
+[properties.oracle_decimal_consistency]
+enabled = true
+# Storage layout / initialization check.
+# Catches re-initialization attacks and unauthorized impl swaps.
+[properties.storage_layout_compatibility]
+enabled         = true
+initialized_slot = 0
+approved_impls  = []  # empty = don't check approved set, just verify impl is a contract
+
+# Dead selector enumerator.
+# Catches functions that should be unreachable but are still callable.
+[properties.dead_selector_enumerator]
+enabled = true
+# Selectors that should revert when called by unauthorized addresses.
+# 0xf525a143 is the tx.origin-guarded setImpl wrapper from Aevo.
+should_be_dead = ["0xf525a143"]
+
+# Liquidity decay invariant.
+# Catches the Yearn-style "thin oracle pool" attack class.
+[properties.liquidity_decay_invariant]
+enabled       = true
+legacy_asset  = "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"  # USDC
+oracle_source = "0x88e6A0c2dDD26FEEb64F039a2c41296FcB3f5640"  # USDC/WETH 0.05% pool
+safety_ratio  = 30000  # 3x in basis points
