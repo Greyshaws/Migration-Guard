@@ -178,7 +178,3 @@ wrappers in CI.
 error** — `foundry.toml` enables `via_ir = true` which is required for
 the runner scripts. Verify the setting is present and that the CI
 environment is reading the same `foundry.toml`.
-
-## License
-
-[MIT, or your preferred license — add a LICENSE file]
