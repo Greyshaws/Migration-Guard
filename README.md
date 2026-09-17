@@ -3,7 +3,7 @@
 This tool catches migration-class bugs in deployed smart contracts. Runs as a CI gate before deploy and as a live monitor after.
 
 For the design rationale, the exploit analysis, and the architectural
-choices, see [`writeup.pdf`](https://docs.google.com/document/d/1QB5Ey5emDlOMKrnFr4K8SZrpvkqOVWC_XIw-JYzJ3K8/edit?usp=sharing).
+choices, see [`writeup`](https://medium.com/@gracious09/migration-guard-ac283aee7347).
 
 ## Requirements
 
@@ -155,7 +155,7 @@ forge test --match-test test_failsOnDecimalMismatch_aevoStyle
 
 ## Limitations
 
-Read at [`writeup.pdf`](https://docs.google.com/document/d/1QB5Ey5emDlOMKrnFr4K8SZrpvkqOVWC_XIw-JYzJ3K8/edit?usp=sharing).
+Read at [`writeup`](https://medium.com/@gracious09/migration-guard-ac283aee7347).
 
 ## Troubleshooting
 
